@@ -635,7 +635,7 @@ function render() {
       Render.sprite(ctx, width, height, resolution, roadWidth, sprites, sprite.source, spriteScale, spriteX, spriteY, (sprite.offset < 0 ? -1 : 0), -1, segment.clip);
     }
 
-    // Render collectibles on this segment
+    // Render collectibles on this segment as glowing markers
     for (i = 0; i < collectibles.length; i++) {
       var c = collectibles[i];
       if (c.collected) continue;
@@ -644,8 +644,30 @@ function render() {
         spriteScale = segment.p1.screen.scale;
         spriteX = segment.p1.screen.x + (spriteScale * c.offset * roadWidth * width/2);
         spriteY = segment.p1.screen.y;
-        // Use a billboard sprite as placeholder for collectibles
-        Render.sprite(ctx, width, height, resolution, roadWidth, sprites, c.source, spriteScale, spriteX, spriteY, -0.5, -1, segment.clip);
+        if (spriteY < segment.clip) {
+          var size = Math.max(4, Math.round(spriteScale * roadWidth * 40));
+          var pulse = 1 + 0.15 * Math.sin(Date.now() * 0.006);
+          var r = size * pulse;
+          // Glow
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = c.isStamp ? '#FFD700' : '#44DDFF';
+          ctx.beginPath(); ctx.arc(spriteX, spriteY - r, r * 1.6, 0, Math.PI*2); ctx.fill();
+          // Solid marker
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = c.isStamp ? '#FFD700' : '#44DDFF';
+          ctx.beginPath(); ctx.arc(spriteX, spriteY - r, r, 0, Math.PI*2); ctx.fill();
+          // Inner highlight
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath(); ctx.arc(spriteX, spriteY - r, r * 0.4, 0, Math.PI*2); ctx.fill();
+          // Label for stamps
+          if (c.isStamp && r > 8) {
+            ctx.fillStyle = '#8B4513';
+            ctx.font = 'bold ' + Math.max(8, Math.round(r*0.7)) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('★', spriteX, spriteY - r + r*0.25);
+          }
+          ctx.globalAlpha = 1;
+        }
       }
     }
 
@@ -1059,19 +1081,18 @@ function resetCollectibles() {
       offset: Util.randomChoice([-0.4, 0, 0.4]),
       isStamp: true,
       collected: false,
-      source: SPRITES.STUMP,  // placeholder sprite until Phase 2
+      source: null,  // rendered as glowing marker, not sprite
     });
   }
 
   // Memory pickups — scattered throughout
-  var memorySources = [SPRITES.BUSH1, SPRITES.BUSH2, SPRITES.CACTUS];
   for (var n = 30; n < segments.length - 30; n += 25 + Math.floor(Math.random()*20)) {
     collectibles.push({
       segmentZ: n * segmentLength,
       offset: Util.randomChoice([-0.5, -0.2, 0, 0.2, 0.5]),
       isStamp: false,
       collected: false,
-      source: Util.randomChoice(memorySources),  // placeholder
+      source: null,  // rendered as glowing marker, not sprite
     });
   }
 }

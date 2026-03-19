@@ -12,11 +12,9 @@ All assets live in `/var/www/sandbox/ced-cruisin/`. Replace files in-place with 
 
 The game currently loads ONE combined `images/sprites.png` (a spritesheet) and uses pixel coordinates to crop each sprite. The coordinates are defined in `game.js` under the `SPRITES` constant.
 
-**Two options for swapping art:**
-1. **Replace individual PNGs** in `images/sprites/` and rebuild the spritesheet (requires a sprite packer tool)
-2. **Switch code to load individual images** instead of spritesheet (I can do this — simpler, no tools needed)
+**You only need to replace the individual PNGs in `images/sprites/` and `images/background/`.**
 
-I recommend option 2. When you return the art, I'll update the code to load each image individually.
+You do NOT need to touch `sprites.png` or `background.png` (the compiled spritesheets). When you return the replaced PNGs, I will switch the code to load each image individually instead of from the spritesheet. No sprite packing tools needed on your end.
 
 ---
 
@@ -128,6 +126,38 @@ Three layers that scroll behind the road to create depth. They tile/scroll horiz
 |------|---------------|----------------|-------------------|
 | `music/racer.mp3` | MP3, 3.5MB | Generic racing arcade music | **Upbeat road-trip instrumental** — warm, Americana, breezy guitar, laid-back groove. 15-30 second loop. Think Buffett/Allman vibes, not cheesy synth. |
 | `music/racer.ogg` | OGG, 4.3MB | Same track in OGG format | Same replacement track in OGG format (or we can drop OGG and just use MP3) |
+
+---
+
+## PRIORITY 4B: COLLECTIBLE SPRITES (New Files — Don't Exist Yet)
+
+These are **new image files** to create. They currently render as glowing placeholder circles (gold for stamps, cyan for memory pickups). Once you provide these PNGs, I'll wire them into the spritesheet and render system.
+
+**Place new files in `images/sprites/`.**
+
+| New File | Size | What It Should Be |
+|----------|------|-------------------|
+| `pickup_stamp.png` | ~80x80 | **Park Pass Stamp** — the primary collectible. Green/gold badge with a park/mountain icon. Should feel important, like a real national park passport stamp. Visible and exciting at small scale. |
+| `pickup_camera.png` | ~60x60 | **Camera** — compact camera icon. Dark body, visible lens. Memory pickup. |
+| `pickup_coffee.png` | ~50x70 | **Coffee cup** — travel coffee cup, maybe with steam. Warm brown tones. |
+| `pickup_map.png` | ~70x50 | **Folded map** — tan/cream paper with a red route line. |
+| `pickup_fishing.png` | ~50x60 | **Fishing lure** — colorful lure or bobber. For the fishing theme. |
+| `pickup_golf.png` | ~40x40 | **Golf ball** — white dimpled ball, maybe on a tee or with a flag. |
+| `pickup_blogo.png` | ~50x50 | **Company B token** — subtle company nod. Red circle with white "B" or similar. |
+
+**Style guidance for collectibles:**
+- PNG with **transparent background**
+- Should be **bright and inviting** — these are rewards, not hazards
+- Must read clearly at ~30-50px on screen (they scale with road perspective)
+- High contrast against road/grass — use bold colors
+- No fine detail that disappears at small size
+
+**How they'll appear in-game:**
+- Floating on the road surface (within the lane area)
+- Subtle pulse/glow effect as you approach
+- Stamps are gold-toned, memory pickups are blue-toned
+- Brief text popup on collection ("worth it", "classic", "good call")
+- 5 stamps total per run (primary collectible), many memory pickups scattered throughout
 
 ---
 
