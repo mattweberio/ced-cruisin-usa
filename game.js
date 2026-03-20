@@ -93,6 +93,19 @@ var speedPenaltyTimer = 0;
 // Collectibles placed on road
 var collectibles   = [];  // {segment, offset, type, collected, source}
 
+// Pickup images (loaded individually, not from spritesheet)
+var pickupImages = {};
+var PICKUP_TYPES = [
+  { key: 'golf',      file: 'golf_flag.png',    caption: 'tee time!' },
+  { key: 'fishing',   file: 'fishing_pole.png',  caption: 'gone fishin\'' },
+  { key: 'sunglasses',file: 'sunglasses.png',    caption: 'cool' },
+  { key: 'coffee',    file: 'coffee_cup.png',    caption: 'good call' },
+  { key: 'camera',    file: 'camera.png',        caption: 'scenic!' },
+  { key: 'map',       file: 'treasure_map.png',  caption: 'scenic route' },
+  { key: 'money',     file: 'money_stack.png',   caption: 'cha-ching!' },
+];
+var STAMP_TYPE = { key: 'stamp', file: 'star_medal.png', caption: '' };
+
 // Zone tracking
 var currentZone    = 1;
 var zoneTransition = 0;  // 0-1 blend progress
@@ -472,7 +485,7 @@ function onPickupCollect(c) {
     SFX.stamp();
   } else {
     memoriesCollected++;
-    var caption = CED.CAPTIONS[Math.floor(Math.random() * CED.CAPTIONS.length)];
+    var caption = c.pickupType.caption || CED.CAPTIONS[Math.floor(Math.random() * CED.CAPTIONS.length)];
     addScore(CED.MEMORY_POINTS, caption);
     SFX.pickup();
   }
@@ -635,7 +648,7 @@ function render() {
       Render.sprite(ctx, width, height, resolution, roadWidth, sprites, sprite.source, spriteScale, spriteX, spriteY, (sprite.offset < 0 ? -1 : 0), -1, segment.clip);
     }
 
-    // Render collectibles on this segment as glowing markers
+    // Render collectibles on this segment as pickup sprites
     for (i = 0; i < collectibles.length; i++) {
       var c = collectibles[i];
       if (c.collected) continue;
@@ -645,28 +658,26 @@ function render() {
         spriteX = segment.p1.screen.x + (spriteScale * c.offset * roadWidth * width/2);
         spriteY = segment.p1.screen.y;
         if (spriteY < segment.clip) {
-          var size = Math.max(4, Math.round(spriteScale * roadWidth * 40));
-          var pulse = 1 + 0.15 * Math.sin(Date.now() * 0.006);
-          var r = size * pulse;
-          // Glow
-          ctx.globalAlpha = 0.3;
+          var img = pickupImages[c.pickupType.key];
+          var size = Math.max(8, Math.round(spriteScale * roadWidth * 60));
+          var pulse = 1 + 0.1 * Math.sin(Date.now() * 0.005);
+          var drawSize = size * pulse;
+          // Glow behind the sprite
+          ctx.globalAlpha = 0.25;
           ctx.fillStyle = c.isStamp ? '#FFD700' : '#44DDFF';
-          ctx.beginPath(); ctx.arc(spriteX, spriteY - r, r * 1.6, 0, Math.PI*2); ctx.fill();
-          // Solid marker
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = c.isStamp ? '#FFD700' : '#44DDFF';
-          ctx.beginPath(); ctx.arc(spriteX, spriteY - r, r, 0, Math.PI*2); ctx.fill();
-          // Inner highlight
-          ctx.fillStyle = '#FFFFFF';
-          ctx.beginPath(); ctx.arc(spriteX, spriteY - r, r * 0.4, 0, Math.PI*2); ctx.fill();
-          // Label for stamps
-          if (c.isStamp && r > 8) {
-            ctx.fillStyle = '#8B4513';
-            ctx.font = 'bold ' + Math.max(8, Math.round(r*0.7)) + 'px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('★', spriteX, spriteY - r + r*0.25);
-          }
+          ctx.beginPath();
+          ctx.arc(spriteX, spriteY - drawSize * 0.5, drawSize * 0.7, 0, Math.PI * 2);
+          ctx.fill();
           ctx.globalAlpha = 1;
+          // Draw the pickup image
+          if (img && img.complete) {
+            ctx.drawImage(img,
+              spriteX - drawSize / 2,
+              spriteY - drawSize,
+              drawSize,
+              drawSize
+            );
+          }
         }
       }
     }
@@ -1081,18 +1092,19 @@ function resetCollectibles() {
       offset: Util.randomChoice([-0.4, 0, 0.4]),
       isStamp: true,
       collected: false,
-      source: null,  // rendered as glowing marker, not sprite
+      pickupType: STAMP_TYPE,
     });
   }
 
-  // Memory pickups — scattered throughout
+  // Memory pickups — scattered throughout with varied types
   for (var n = 30; n < segments.length - 30; n += 25 + Math.floor(Math.random()*20)) {
+    var pType = PICKUP_TYPES[Math.floor(Math.random() * PICKUP_TYPES.length)];
     collectibles.push({
       segmentZ: n * segmentLength,
       offset: Util.randomChoice([-0.5, -0.2, 0, 0.2, 0.5]),
       isStamp: false,
       collected: false,
-      source: null,  // rendered as glowing marker, not sprite
+      pickupType: pType,
     });
   }
 }
@@ -1145,6 +1157,13 @@ Game.run({
   ready: function(images) {
     background = images[0];
     sprites    = images[1];
+    // Load pickup images individually
+    var allPickups = PICKUP_TYPES.concat([STAMP_TYPE]);
+    allPickups.forEach(function(p) {
+      var img = new Image();
+      img.src = 'images/sprites/' + p.file;
+      pickupImages[p.key] = img;
+    });
     reset();
     SFX.init();
     canvas.focus();
