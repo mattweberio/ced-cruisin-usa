@@ -861,8 +861,8 @@ function renderMenu() {
   ctx.font = 'bold 28px Arial';
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#000';
-  ctx.strokeText('Press SPACE to Start', width/2, height - 70);
-  ctx.fillText('Press SPACE to Start', width/2, height - 70);
+  ctx.strokeText('Click to Start', width/2, height - 70);
+  ctx.fillText('Click to Start', width/2, height - 70);
   ctx.globalAlpha = 1;
 
   // Credit
@@ -1223,14 +1223,6 @@ Game.run({
     { keys: [KEY.ESC],          mode: 'down', action: function() {
       if (GAME_STATE === 'gameover') { GAME_STATE = 'menu'; }
     }},
-    // DEBUG: press F to skip to finish screen
-    { keys: [70], mode: 'down', action: function() {
-      if (GAME_STATE === 'playing') {
-        stampsCollected = 4; memoriesCollected = 12; score = 3500;
-        bestCleanStreak = 14; vibe = 72;
-        endRun(true);
-      }
-    }},
   ],
   ready: function(images) {
     background = images[0];
@@ -1248,6 +1240,18 @@ Game.run({
     reset();
     SFX.init();
     canvas.focus();
+    // Direct keyboard listener as backup for space/R/ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space' || e.keyCode === 32) {
+        if (GAME_STATE === 'menu') { startGame(); e.preventDefault(); }
+      }
+      if (e.code === 'KeyR' || e.keyCode === 82) {
+        if (GAME_STATE === 'gameover') { startGame(); }
+      }
+      if (e.code === 'Escape' || e.keyCode === 27) {
+        if (GAME_STATE === 'gameover') { GAME_STATE = 'menu'; }
+      }
+    });
     // Click to start from menu or game over
     canvas.addEventListener('click', function() {
       if (GAME_STATE === 'menu') startGame();
