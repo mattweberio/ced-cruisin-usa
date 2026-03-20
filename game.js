@@ -93,6 +93,9 @@ var speedPenaltyTimer = 0;
 // Collectibles placed on road
 var collectibles   = [];  // {segment, offset, type, collected, source}
 
+// Cover art for menu screen
+var coverImage = null;
+
 // Pickup images (loaded individually, not from spritesheet)
 var pickupImages = {};
 var PICKUP_TYPES = [
@@ -793,45 +796,79 @@ function renderHUD() {
 function renderMenu() {
   ctx.clearRect(0, 0, width, height);
 
-  // Dark gradient background
-  var grad = ctx.createLinearGradient(0, 0, 0, height);
-  grad.addColorStop(0, '#1a1a2e');
-  grad.addColorStop(1, '#16213e');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, width, height);
+  // Cover art — centered vertically, full width, gradient fade at bottom
+  if (coverImage && coverImage.complete && coverImage.naturalWidth) {
+    ctx.fillStyle = '#0a0a12';
+    ctx.fillRect(0, 0, width, height);
 
-  // Title
-  ctx.fillStyle = '#FFF';
-  ctx.font = 'bold 52px Arial Black, Impact, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 4;
-  ctx.strokeText('CED CRUISIN\' USA', width/2, 200);
-  ctx.fillText('CED CRUISIN\' USA', width/2, 200);
+    var imgAspect = coverImage.naturalWidth / coverImage.naturalHeight;
+    var drawW = width;
+    var drawH = width / imgAspect;
+    var drawX = 0;
+    // Center the image vertically, shifted slightly up to leave room at bottom
+    var drawY = Math.round((height - drawH) / 2) - 40;
+
+    ctx.drawImage(coverImage, drawX, drawY, drawW, drawH);
+
+    // Gradient fade at the bottom of the image into solid dark
+    var fadeStart = drawY + drawH - 120;
+    var grad = ctx.createLinearGradient(0, fadeStart, 0, drawY + drawH + 10);
+    grad.addColorStop(0, 'rgba(10,10,18,0)');
+    grad.addColorStop(1, 'rgba(10,10,18,1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, fadeStart, width, drawH);
+
+    // Solid dark below the image
+    ctx.fillStyle = '#0a0a12';
+    ctx.fillRect(0, drawY + drawH, width, height - (drawY + drawH));
+  } else {
+    // Fallback if cover hasn't loaded
+    var grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#1a1a2e');
+    grad.addColorStop(1, '#16213e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 52px Arial Black, Impact, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.strokeText('CED CRUISIN\' USA', width/2, 200);
+    ctx.fillText('CED CRUISIN\' USA', width/2, 200);
+  }
 
   // Subtitle
+  ctx.textAlign = 'center';
   ctx.fillStyle = '#FFE4B5';
   ctx.font = '20px Georgia, serif';
-  ctx.fillText('Ced hits the open road', width/2, 250);
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.strokeText('Ced hits the open road', width/2, height - 200);
+  ctx.fillText('Ced hits the open road', width/2, height - 200);
 
   // Controls
-  ctx.fillStyle = '#AAA';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
   ctx.font = '14px monospace';
-  ctx.fillText('LEFT / RIGHT  or  A / D  —  Steer', width/2, 400);
-  ctx.fillText('UP  or  W  —  Boost', width/2, 425);
+  ctx.lineWidth = 2;
+  ctx.strokeText('LEFT / RIGHT  or  A / D  —  Steer       UP  or  W  —  Boost', width/2, height - 130);
+  ctx.fillText('LEFT / RIGHT  or  A / D  —  Steer       UP  or  W  —  Boost', width/2, height - 130);
 
   // Start prompt (pulsing)
   var alpha = 0.5 + 0.5 * Math.sin(Date.now() * 0.004);
   ctx.globalAlpha = alpha;
   ctx.fillStyle = '#FFF';
-  ctx.font = 'bold 24px Arial';
-  ctx.fillText('Press SPACE to Start', width/2, 520);
+  ctx.font = 'bold 28px Arial';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#000';
+  ctx.strokeText('Press SPACE to Start', width/2, height - 70);
+  ctx.fillText('Press SPACE to Start', width/2, height - 70);
   ctx.globalAlpha = 1;
 
   // Credit
-  ctx.fillStyle = '#555';
-  ctx.font = '11px Arial';
-  ctx.fillText('Road engine by Jake Gordon | Made for Ced\'s retirement', width/2, height - 20);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '10px Arial';
+  ctx.fillText('Road engine by Jake Gordon | Made for Ced\'s retirement', width/2, height - 10);
 }
 
 //=============================================================================
@@ -1198,6 +1235,9 @@ Game.run({
   ready: function(images) {
     background = images[0];
     sprites    = images[1];
+    // Load cover art
+    coverImage = new Image();
+    coverImage.src = 'images/cover.jpg';
     // Load pickup images individually
     var allPickups = PICKUP_TYPES.concat([STAMP_TYPE]);
     allPickups.forEach(function(p) {
