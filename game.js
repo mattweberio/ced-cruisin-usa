@@ -868,7 +868,7 @@ function renderMenu() {
   // Credit
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.font = '10px Arial';
-  ctx.fillText('Road engine by Jake Gordon | Made for Ced\'s retirement', width/2, height - 10);
+  ctx.fillText('Made for Ced\'s retirement', width/2, height - 10);
 }
 
 //=============================================================================
