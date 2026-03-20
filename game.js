@@ -96,13 +96,16 @@ var collectibles   = [];  // {segment, offset, type, collected, source}
 // Pickup images (loaded individually, not from spritesheet)
 var pickupImages = {};
 var PICKUP_TYPES = [
-  { key: 'golf',      file: 'golf_flag.png',    caption: 'tee time!' },
+  { key: 'golf',      file: 'golf_flag.png',     caption: 'tee time!' },
   { key: 'fishing',   file: 'fishing_pole.png',  caption: 'gone fishin\'' },
   { key: 'sunglasses',file: 'sunglasses.png',    caption: 'cool' },
-  { key: 'coffee',    file: 'coffee_cup.png',    caption: 'good call' },
   { key: 'camera',    file: 'camera.png',        caption: 'scenic!' },
   { key: 'map',       file: 'treasure_map.png',  caption: 'scenic route' },
   { key: 'money',     file: 'money_stack.png',   caption: 'cha-ching!' },
+  { key: 'bbq',       file: 'bbq.png',           caption: 'grill time!' },
+  { key: 'beer',      file: 'beer.png',          caption: 'cheers!' },
+  { key: 'binoculars',file: 'binoculars.png',    caption: 'great view!' },
+  { key: 'rocking',   file: 'rocking_chair.png', caption: 'easy livin\'' },
 ];
 var STAMP_TYPE = { key: 'stamp', file: 'star_medal.png', caption: '' };
 
@@ -1096,9 +1099,16 @@ function resetCollectibles() {
     });
   }
 
-  // Memory pickups — scattered throughout with varied types
+  // Memory pickups — zone-weighted, no-repeat distribution
+  var lastPickupKey = '';
   for (var n = 30; n < segments.length - 30; n += 25 + Math.floor(Math.random()*20)) {
-    var pType = PICKUP_TYPES[Math.floor(Math.random() * PICKUP_TYPES.length)];
+    // Determine zone for this segment
+    var zone = (n < zone1End) ? 1 : (n < zone2End) ? 2 : 3;
+    var pool = getZonePickups(zone);
+    // Avoid repeating the same type twice in a row
+    var filtered = pool.length > 1 ? pool.filter(function(p) { return p.key !== lastPickupKey; }) : pool;
+    var pType = filtered[Math.floor(Math.random() * filtered.length)];
+    lastPickupKey = pType.key;
     collectibles.push({
       segmentZ: n * segmentLength,
       offset: Util.randomChoice([-0.5, -0.2, 0, 0.2, 0.5]),
@@ -1107,6 +1117,29 @@ function resetCollectibles() {
       pickupType: pType,
     });
   }
+}
+
+function getZonePickups(zone) {
+  // Returns a weighted pool of pickup types for the zone.
+  // Items repeated in the array are more likely to be picked.
+  // Zone 1 (highway): leaving work — map, money, camera. Light on retirement stuff.
+  // Zone 2 (parks): retirement life — heavy golf, fishing, some money/camera.
+  // Zone 3 (scenic): payoff — golf, fishing, sunglasses, money, camera.
+  var keysByZone = {
+    // Zone 1 (highway): leaving work — money, map, sunglasses, beer (freedom!)
+    1: ['money', 'map', 'sunglasses', 'beer', 'camera', 'money', 'map', 'beer'],
+    // Zone 2 (parks): retirement life — heavy golf, fishing, bbq, binoculars
+    2: ['golf', 'fishing', 'bbq', 'binoculars', 'golf', 'fishing', 'camera', 'beer', 'golf', 'fishing', 'bbq'],
+    // Zone 3 (scenic): payoff — rocking chair, golf, fishing, sunglasses, binoculars
+    3: ['rocking', 'golf', 'fishing', 'sunglasses', 'binoculars', 'camera', 'rocking', 'golf', 'fishing', 'money'],
+  };
+  var keys = keysByZone[zone] || keysByZone[1];
+  // Convert keys to pickup type objects, deduped for the filter
+  var lookup = {};
+  PICKUP_TYPES.forEach(function(p) { lookup[p.key] = p; });
+  var result = [];
+  keys.forEach(function(k) { if (lookup[k]) result.push(lookup[k]); });
+  return result;
 }
 
 function resetCars() {
@@ -1152,6 +1185,14 @@ Game.run({
     }},
     { keys: [KEY.ESC],          mode: 'down', action: function() {
       if (GAME_STATE === 'gameover') { GAME_STATE = 'menu'; }
+    }},
+    // DEBUG: press F to skip to finish screen
+    { keys: [70], mode: 'down', action: function() {
+      if (GAME_STATE === 'playing') {
+        stampsCollected = 4; memoriesCollected = 12; score = 3500;
+        bestCleanStreak = 14; vibe = 72;
+        endRun(true);
+      }
     }},
   ],
   ready: function(images) {
